@@ -34,7 +34,7 @@ export function whyMatchScreen(why) {
   return sections.join('\n\n');
 }
 
-export function profileTable(profile, { includeInterests = true } = {}) {
+export function profileTable(profile, { includeInterests = true, interestHeading = '💞 ʟᴏᴠᴇ & ʀᴇʟᴀᴛɪᴏɴsʜɪᴘ' } = {}) {
   const escapeHtml = (value) => String(value ?? '—').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
   const field = (icon, label, value) =>
     `╭─ ${icon} <b>${label}</b>\n╰─ ${escapeHtml(value || '—')}`;
@@ -48,7 +48,7 @@ export function profileTable(profile, { includeInterests = true } = {}) {
   if (profile.gender) sections.push(field('🚻', 'ɢᴇɴᴅᴇʀ', profile.gender === 'male' ? 'ʙᴏʏ' : 'ɢɪʀʟ'));
   if (profile.lookingFor) sections.push(field('🎯', 'ʟᴏᴏᴋɪɴɢ ғᴏʀ', profile.lookingFor));
   if (includeInterests && profile.interests?.length) {
-    sections.push(`╭─ 💞 <b>ʟᴏᴠᴇ & ʀᴇʟᴀᴛɪᴏɴsʜɪᴘ</b>\n╰─ ${profile.interests.map((i) => `${i.emoji} ${i.name}`).join('\n')}`);
+    sections.push(`╭─ ${interestHeading}\n╰─ ${profile.interests.map((i) => `${i.emoji} ${i.name}`).join('\n')}`);
   }
   return sections.join('\n\n');
 }
@@ -56,7 +56,15 @@ export function profileBlock(profile) {
   return profileTable(profile);
 }
 
-export function discoveryProfileCard({ profile, score }) {
+export function discoveryProfileCard({ profile, score, mode = 'relationship' }) {
+  if (mode === 'friendship') {
+    return `${header('🤝 ғʀɪᴇɴᴅsʜɪᴘ ᴅɪsᴄᴏᴠᴇʀʏ')}
+${profileTable(profile, { includeInterests: false })}
+
+🌱 sᴀᴍᴇ-ᴀɢᴇ ғʀɪᴇɴᴅsʜɪᴘ ᴅɪsᴄᴏᴠᴇʀʏ
+🎯 ᴄᴏᴍᴘᴀᴛɪʙɪʟɪᴛʏ
+${confidenceBar(score)} ${score}%`;
+  }
   return `${header('💚 ᴅɪsᴄᴏᴠᴇʀ')}
 ${profileTable(profile, { includeInterests: false })}
 
@@ -67,6 +75,13 @@ ${confidenceBar(score)} ${score}%`;
 export function interactProfileScreen(profile, score = null) {
   return `${header('💞 ᴘʀᴏғɪʟᴇ')}
 ${profileTable(profile)}${score === null ? '' : `\n\n🎯 ᴍᴀᴛᴄʜ: ${score}%`}`;
+}
+
+export function friendshipProfileScreen(profile) {
+  return `${header('🤝 ғʀɪᴇɴᴅsʜɪᴘ ᴘʀᴏғɪʟᴇ')}
+${profileTable(profile)}
+
+🌱 ᴛʜɪs ᴘʀᴏғɪʟᴇ ɪs ʙᴇɪɴɢ sʜᴏᴡɴ ғᴏʀ sᴀᴍᴇ-ᴀɢᴇ ғʀɪᴇɴᴅsʜɪᴘ ᴅɪsᴄᴏᴠᴇʀʏ.`;
 }
 
 export function noMoreMatchesScreen() {

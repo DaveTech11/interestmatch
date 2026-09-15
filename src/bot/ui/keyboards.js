@@ -44,10 +44,19 @@ export function matchTypesKeyboard() {
   ]};
 }
 
-export function discoveryCardKeyboard(targetUserId, matchType = 'best_match') {
+export function discoveryCardKeyboard(targetUserId, matchType = 'best_match', mode = 'relationship') {
   const likeAction = matchType === 'daily_match' ? 'dailylike' : 'like';
   const passAction = matchType === 'daily_match' ? 'dailypass' : 'pass';
   const nextAction = matchType === 'quick_match' ? 'quicknext' : 'next';
+  if (mode === 'friendship') {
+    return { inline_keyboard: [
+      row(btn('🤝 ɪɴᴛᴇʀᴀᴄᴛ', `interact:${targetUserId}`, 'success'), btn('➡️ ɴᴇxᴛ', `next:${matchType}:${targetUserId}`, 'primary')),
+      row(btn('🤝 sᴇɴᴅ ғʀɪᴇɴᴅ ʀᴇǫᴜᴇsᴛ', `friendconnect:${targetUserId}`, 'success')),
+      row(btn('⭐ sᴀᴠᴇ', `save:${targetUserId}`), btn('⛔ ʜɪᴅᴇ', `hide:${targetUserId}`)),
+      row(btn('🚫 ʙʟᴏᴄᴋ', `block:${targetUserId}`, 'danger'), btn('🚨 ʀᴇᴘᴏʀᴛ', `report:${targetUserId}`)),
+      row(btn('⬅️ ᴍᴇɴᴜ', 'menu:main')),
+    ]};
+  }
   return { inline_keyboard: [
     row(btn('👤 ɪɴᴛᴇʀᴀᴄᴛ', `interact:${targetUserId}`, 'success'), btn('➡️ ɴᴇxᴛ', `${nextAction}:${matchType}:${targetUserId}`, 'primary')),
     row(btn('💚 ʟɪᴋᴇ', `${likeAction}:${targetUserId}`, 'success'), btn('❌ ᴘᴀss', `${passAction}:${targetUserId}`)),
@@ -56,6 +65,16 @@ export function discoveryCardKeyboard(targetUserId, matchType = 'best_match') {
     row(btn('⭐ sᴀᴠᴇ', `save:${targetUserId}`), btn('⛔ ʜɪᴅᴇ', `hide:${targetUserId}`)),
     row(btn('🚫 ʙʟᴏᴄᴋ', `block:${targetUserId}`, 'danger'), btn('🚨 ʀᴇᴘᴏʀᴛ', `report:${targetUserId}`)),
     row(btn('⬅️ ᴍᴇɴᴜ', 'menu:main')),
+  ]};
+}
+
+export function friendshipProfileKeyboard(targetUserId) {
+  return { inline_keyboard: [
+    row(btn('🤝 sᴇɴᴅ ғʀɪᴇɴᴅ ʀᴇǫᴜᴇsᴛ', `friendconnect:${targetUserId}`, 'success')),
+    row(btn('➡️ ɴᴇxᴛ', `next:best_match:${targetUserId}`, 'primary')),
+    row(btn('⭐ sᴀᴠᴇ', `save:${targetUserId}`), btn('⛔ ʜɪᴅᴇ', `hide:${targetUserId}`)),
+    row(btn('🚫 ʙʟᴏᴄᴋ', `block:${targetUserId}`, 'danger'), btn('🚨 ʀᴇᴘᴏʀᴛ', `report:${targetUserId}`)),
+    row(btn('⬅️ ᴅɪsᴄᴏᴠᴇʀʏ', 'discover:best_match', 'primary')),
   ]};
 }
 

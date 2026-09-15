@@ -7,6 +7,19 @@ export function createConnectionService({ store, rateLimiter, notificationServic
   return {
     sendRequest(requesterId, recipientId, message) {
       if (requesterId === recipientId) throw new ValidationError('You cannot connect with yourself.');
+      const requester = store.getUserById(requesterId);
+      const recipient = store.getUserById(recipientId);
+      if (requester && recipient) {
+        const requesterAge = Number(requester.age);
+        const recipientAge = Number(recipient.age);
+        const requesterMinor = Number.isFinite(requesterAge) && requesterAge >= 14 && requesterAge <= 17;
+        const recipientMinor = Number.isFinite(recipientAge) && recipientAge >= 14 && recipientAge <= 17;
+        if (requesterMinor || recipientMinor) {
+          if (!(requesterMinor && recipientMinor && requesterAge === recipientAge)) {
+            throw new ForbiddenError('Friendship connections are limited to members of the same age from 14–17.');
+          }
+        }
+      }
       if (store.isBlocked(requesterId, recipientId)) {
         throw new ForbiddenError('You cannot connect with this person.');
       }

@@ -10,7 +10,15 @@ export function createDiscoveryService({store,profileService,interestCatalogServ
   async function rankAllCandidates(userId,{includeUnknownGender=false}={}){
     const sourceUser=profileService.getUser(userId), sourceProfile=profileService.buildMatchProfile(userId), excluded=excludedIds(userId);
     const pref=typeof store.getMatchPreferences==='function'?store.getMatchPreferences(sourceUser.id):null;
-    const candidates=store.listDiscoverableUsers(userId).filter(u=>!excluded.has(u.id)).filter(u=>!store.isBlocked(userId,u.id)).filter(u=>!trustService.isSuppressedFromDiscovery(u.id)).filter(u=>includeUnknownGender?true:genderCompatible(sourceUser,u)).filter(u=>{if(pref?.min_age&&(!u.age||u.age<pref.min_age))return false;if(pref?.max_age&&(!u.age||u.age>pref.max_age))return false;if(pref?.nearby_only&&sourceUser.country&&u.country&&sourceUser.country.toLowerCase()!==u.country.toLowerCase())return false;return true;});
+    const candidates=store.listDiscoverableUsers(userId).filter(u=>!excluded.has(u.id)).filter(u=>!store.isBlocked(userId,u.id)).filter(u=>!trustService.isSuppressedFromDiscovery(u.id)).filter(u=>includeUnknownGender?true:genderCompatible(sourceUser,u)).filter(u=>{
+      // Romantic discovery is adults-only. Test/legacy users without an age remain discoverable.
+      if (sourceUser.age != null && sourceUser.age < 18) return false;
+      if (sourceUser.age != null && sourceUser.age >= 18 && (u.age == null || u.age < 18)) return false;
+      if(pref?.min_age&&(!u.age||u.age<pref.min_age))return false;
+      if(pref?.max_age&&(!u.age||u.age>pref.max_age))return false;
+      if(pref?.nearby_only&&sourceUser.country&&u.country&&sourceUser.country.toLowerCase()!==u.country.toLowerCase())return false;
+      return true;
+    });
     const candidateProfiles=candidates.map(u=>profileService.buildMatchProfile(u.id)), interestCategoryMap=interestCatalogService.buildCategoryMap();
     return (await recommendationProvider.rank(sourceProfile,candidateProfiles,{weights:getWeights(),interestCategoryMap})).map(result=>({...result,user:candidates.find(u=>u.id===result.profile.userId)})).filter(r=>r.user);
   }

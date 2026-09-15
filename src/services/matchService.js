@@ -4,7 +4,11 @@ export function createMatchService({ store, discoveryService, connectionService,
   function eligible(userId, targetUserId) {
     if (userId === targetUserId) throw new ValidationError('You cannot match with yourself.');
     if (!discoveryService.isGenderCompatible(userId, targetUserId)) throw new ForbiddenError('This profile does not match your gender preference.');
+    const source = profileService.getUser(userId);
     const target = profileService.getUser(targetUserId);
+    if ((source.age != null && source.age < 18) || (target.age != null && target.age < 18)) {
+      throw new ForbiddenError('Romantic matching is available to members 18+ only.');
+    }
     if (!target.onboarding_complete) throw new ValidationError('This profile is not ready for matching yet.');
     const privacy = store.getPrivacySettings(targetUserId);
     if (!privacy?.allow_connections) throw new ForbiddenError('This person is not accepting matches right now.');

@@ -387,7 +387,8 @@ export async function buildApplication() {
           await matchHandlers.pass(chatId, user, Number(parts[2]));
           break;
         case 'discover':
-          await discoveryHandlers.runDiscovery(chatId, user, parts[0]);
+          if (!(await ensureOnboarded(chatId, user))) return;
+          await discoveryHandlers.runDiscovery(chatId, user, parts[0] || 'best_match');
           break;
         case 'next':
           await discoveryHandlers.advance(chatId, user);
@@ -409,6 +410,9 @@ export async function buildApplication() {
           break;
         case 'view':
           await discoveryHandlers.view(chatId, user, Number(parts[0]));
+          break;
+        case 'interact':
+          await discoveryHandlers.interact(chatId, user, Number(parts[0]));
           break;
         case 'connect':
           await discoveryHandlers.promptConnect(chatId, user, Number(parts[0]));

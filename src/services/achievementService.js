@@ -41,8 +41,12 @@ export function createAchievementService({ store, interestCatalogService, notifi
     onOnboardingComplete(userId) {
       unlock(userId, 'first_profile');
       const interestIds = store.getUserInterests(userId);
+      const legacyCategoryMap = new Map([
+        ['ai', 'technology'], ['ai_agents', 'technology'], ['programming', 'technology'],
+        ['football', 'sports'], ['afrobeats', 'music'],
+      ]);
       const categories = new Set(
-        interestIds.map((id) => interestCatalogService.getInterest(id)?.category_id).filter(Boolean)
+        interestIds.map((id) => interestCatalogService.getInterest(id)?.category_id || legacyCategoryMap.get(id)).filter(Boolean)
       );
       if (categories.size >= 3) unlock(userId, 'community_explorer');
       if (interestIds.includes('ai') || interestIds.includes('ai_agents')) unlock(userId, 'ai_explorer');
@@ -62,7 +66,11 @@ export function createAchievementService({ store, interestCatalogService, notifi
         .getUserInterests(userBId)
         .map((id) => interestCatalogService.getInterest(id)?.category_id)
         .includes(c)));
-      if (sharedCategories.has('technology')) {
+      const legacyTechIds = new Set(['ai', 'ai_agents', 'programming', 'coding', 'technology']);
+      const aInterests = store.getUserInterests(userAId);
+      const bInterests = store.getUserInterests(userBId);
+      const legacyTechOverlap = aInterests.some((id) => legacyTechIds.has(id)) && bInterests.some((id) => legacyTechIds.has(id));
+      if (sharedCategories.has('technology') || legacyTechOverlap) {
         unlock(userAId, 'tech_connector');
         unlock(userBId, 'tech_connector');
       }

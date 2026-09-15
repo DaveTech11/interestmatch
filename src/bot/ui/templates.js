@@ -34,16 +34,53 @@ export function whyMatchScreen(why) {
   return sections.join('\n\n');
 }
 
-export function profileBlock(profile) {
-  const parts = [
-    `${profile.displayName}${profile.verified ? ' ☑️' : ''}${profile.vip ? ' 👑' : ''}${profile.age ? `, ${profile.age}` : ''}${profile.country ? ` · ${profile.country}` : ''}`,
-    profile.online ? '🟢 ᴏɴʟɪɴᴇ' : '⚪️ ᴏғғʟɪɴᴇ',
-    profile.bio ? `\n💬 ${profile.bio}` : '',
-    profile.gender ? `\n👤 ${profile.gender === 'male' ? 'ʙᴏʏ' : 'ɢɪʀʟ'}` : '',
-    profile.lookingFor ? `\n🎯 ${profile.lookingFor}` : '',
-    profile.interests?.length ? `\n❤️ ${profile.interests.map((i) => `${i.emoji} ${i.name}`).join(' · ')}` : '',
+export function profileTable(profile, { includeInterests = true } = {}) {
+  const lines = [
+    `━━━━━━━━━━━━━━━━━━━━`,
+    `👤 ɴᴀᴍᴇ\n${profile.displayName || '—'}`,
+    `━━━━━━━━━━━━━━━━━━━━`,
+    `🎂 ᴀɢᴇ\n${profile.age ?? '—'}`,
+    `━━━━━━━━━━━━━━━━━━━━`,
+    `💬 ʙɪᴏ\n${profile.bio || 'ɴᴏ ʙɪᴏ ʏᴇᴛ.'}`,
+    `━━━━━━━━━━━━━━━━━━━━`,
+    `🌍 ᴄᴏᴜɴᴛʀʏ\n${profile.country || '—'}`,
   ];
-  return parts.filter(Boolean).join('');
+  if (profile.gender) {
+    lines.push(`━━━━━━━━━━━━━━━━━━━━`, `🚻 ɢᴇɴᴅᴇʀ\n${profile.gender === 'male' ? 'ʙᴏʏ' : 'ɢɪʀʟ'}`);
+  }
+  if (profile.lookingFor) {
+    lines.push(`━━━━━━━━━━━━━━━━━━━━`, `🎯 ʟᴏᴏᴋɪɴɢ ғᴏʀ\n${profile.lookingFor}`);
+  }
+  if (includeInterests && profile.interests?.length) {
+    lines.push(`━━━━━━━━━━━━━━━━━━━━`, `💞 ʟᴏᴠᴇ & ʀᴇʟᴀᴛɪᴏɴsʜɪᴘ\n${profile.interests.map((i) => `${i.emoji} ${i.name}`).join('\n')}`);
+  }
+  lines.push(`━━━━━━━━━━━━━━━━━━━━`);
+  return lines.join('\n');
+}
+
+export function profileBlock(profile) {
+  return profileTable(profile);
+}
+
+export function discoveryProfileCard({ profile, score }) {
+  return `${header('💚 ᴅɪsᴄᴏᴠᴇʀ')}
+${profileTable(profile, { includeInterests: false })}
+
+🎯 ᴍᴀᴛᴄʜ ᴄᴏɴғɪᴅᴇɴᴄᴇ
+${confidenceBar(score)} ${score}%`;
+}
+
+export function interactProfileScreen(profile, score = null) {
+  return `${header('💞 ᴘʀᴏғɪʟᴇ')}
+${profileTable(profile)}${score === null ? '' : `\n\n🎯 ᴍᴀᴛᴄʜ: ${score}%`}`;
+}
+
+export function noMoreMatchesScreen() {
+  return `${header('💚 ᴅɪsᴄᴏᴠᴇʀ')}
+
+🏁 ɴᴏ ᴍᴏʀᴇ ᴘʀᴏғɪʟᴇs ʀɪɢʜᴛ ɴᴏᴡ.
+
+ᴄᴏᴍᴇ ʙᴀᴄᴋ ʟᴀᴛᴇʀ ᴛᴏ ᴍᴇᴇᴛ ɴᴇᴡ ᴘᴇᴏᴘʟᴇ.`;
 }
 
 export function matchCard({ profile, score, why, matchTypeLabel }) {
@@ -140,13 +177,3 @@ export function matchHistoryScreen(rows) {
 }
 export function trendingModesScreen() { return `🔥 ᴛʀᴇɴᴅɪɴɢ ᴘᴇᴏᴘʟᴇ\n\nᴄʜᴏᴏsᴇ ᴡʜᴀᴛ ʏᴏᴜ ᴡᴀɴᴛ ᴛᴏ sᴇᴇ.`; }
 export function reportReasonsScreen() { return `🚨 ʀᴇᴘᴏʀᴛ ᴘʀᴏғɪʟᴇ\n\nᴡʜᴀᴛ's ᴡʀᴏɴɢ?`; }
-
-export function noMoreMatchesScreen() {
-  return `
-<b>?? ?? ???? ??????s</b>
-
-???'?? ??????? ??? ??? ?? ???? ??????? ??s?????? ??s?.
-
-??? ???????? ???? ????? ??????????s ?? ???? ???? ?????. ??
-`.trim();
-}

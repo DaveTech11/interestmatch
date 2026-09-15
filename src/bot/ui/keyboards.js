@@ -45,14 +45,26 @@ export function matchTypesKeyboard() {
 }
 
 export function discoveryCardKeyboard(targetUserId, matchType = 'best_match') {
+  const likeAction = matchType === 'daily_match' ? 'dailylike' : 'like';
+  const passAction = matchType === 'daily_match' ? 'dailypass' : 'pass';
+  const nextAction = matchType === 'quick_match' ? 'quicknext' : 'next';
   return { inline_keyboard: [
-    row(btn('💚 ʟɪᴋᴇ', `${matchType === 'daily_match' ? 'dailylike' : 'like'}:${targetUserId}`, 'success'), btn('❌ ᴘᴀss', `${matchType === 'daily_match' ? 'dailypass' : 'pass'}:${targetUserId}`)),
+    row(btn('👤 ɪɴᴛᴇʀᴀᴄᴛ', `interact:${targetUserId}`, 'success'), btn('➡️ ɴᴇxᴛ', `${nextAction}:${matchType}:${targetUserId}`, 'primary')),
+    row(btn('💚 ʟɪᴋᴇ', `${likeAction}:${targetUserId}`, 'success'), btn('❌ ᴘᴀss', `${passAction}:${targetUserId}`)),
     row(btn('⭐ sᴜᴘᴇʀ ʟɪᴋᴇ', `superlike:${targetUserId}`, 'primary')),
-    row(btn('👤 ᴘʀᴏғɪʟᴇ', `view:${targetUserId}`), btn('➡️ ɴᴇxᴛ', `${matchType === 'quick_match' ? 'quicknext' : 'next'}:${matchType}:${targetUserId}`, 'primary')),
     row(btn('💚 ᴄᴏɴɴᴇᴄᴛ', `connect:${targetUserId}`, 'success')),
     row(btn('⭐ sᴀᴠᴇ', `save:${targetUserId}`), btn('⛔ ʜɪᴅᴇ', `hide:${targetUserId}`)),
     row(btn('🚫 ʙʟᴏᴄᴋ', `block:${targetUserId}`, 'danger'), btn('🚨 ʀᴇᴘᴏʀᴛ', `report:${targetUserId}`)),
     row(btn('⬅️ ᴍᴇɴᴜ', 'menu:main')),
+  ]};
+}
+
+export function interactProfileKeyboard(targetUserId) {
+  return { inline_keyboard: [
+    row(btn('💚 ʟɪᴋᴇ', `like:${targetUserId}`, 'success'), btn('❌ ᴘᴀss', `pass:${targetUserId}`)),
+    row(btn('💌 ᴄᴏɴɴᴇᴄᴛ', `connect:${targetUserId}`, 'success'), btn('➡️ ɴᴇxᴛ', `next:best_match:${targetUserId}`, 'primary')),
+    row(btn('⭐ sᴀᴠᴇ', `save:${targetUserId}`)),
+    row(btn('⬅️ ʙᴀᴄᴋ ᴛᴏ ᴅɪsᴄᴏᴠᴇʀʏ', 'discover:best_match', 'primary')),
   ]};
 }
 

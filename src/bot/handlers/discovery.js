@@ -1,5 +1,5 @@
-import { matchCard, noMoreMatchesScreen, header, communityScreen, profileBlock, trendingPeopleCard, customMatchNoResults } from '../ui/templates.js';
-import { discoveryCardKeyboard, connectionReasonKeyboard, mainMenuKeyboard, backButton, communityActionsKeyboard, trendingPeopleKeyboard } from '../ui/keyboards.js';
+import { matchCard, noMoreMatchesScreen, header, communityScreen, profileBlock, profileTable, discoveryProfileCard, interactProfileScreen, trendingPeopleCard, customMatchNoResults } from '../ui/templates.js';
+import { discoveryCardKeyboard, interactProfileKeyboard, connectionReasonKeyboard, mainMenuKeyboard, backButton, communityActionsKeyboard, trendingPeopleKeyboard } from '../ui/keyboards.js';
 import { getSession, clearAwaiting } from '../session.js';
 import { RateLimitError } from '../../utils/errors.js';
 
@@ -15,7 +15,13 @@ export function createDiscoveryHandlers({ telegram, discoveryService, connection
   }
   function candidateProfile(candidate) { return profileService.renderPublicProfile(candidate.user.id); }
 
-  async function runDiscovery(chatId, user, matchType, filters = {}) {
+  async function runDiscovery(chatId, user, matchType = 'best_match', filters = {}) {
+    const fresh = profileService.getUser(user.id);
+    if (fresh.age && fresh.age < 18) {
+      await telegram.sendMessage(chatId, `${header('🔒 ᴅɪsᴄᴏᴠᴇʀʏ ʟᴏᴄᴋᴇᴅ')}\n
+ʟᴏᴠᴇ & ʀᴇʟᴀᴛɪᴏɴsʜɪᴘ ᴅɪsᴄᴏᴠᴇʀʏ ɪs ᴀᴠᴀɪʟᴀʙʟᴇ ᴛᴏ ᴍᴇᴍʙᴇʀs 18+ ᴏɴʟʏ.`);
+      return;
+    }
     streakService.recordActivity(user.id);
     const results = await discoveryService.discover(user.id, { matchType, filters, limit:20 });
     const session = getSession(user.telegram_id); session.queue = results; session.context.queueIndex=0; session.context.matchType=matchType;
@@ -26,7 +32,7 @@ export function createDiscoveryHandlers({ telegram, discoveryService, connection
     const session = getSession(user.telegram_id); const idx=session.context.queueIndex||0; const queue=session.queue||[];
     if (idx >= queue.length) { await telegram.sendMessage(chatId, noMoreMatchesScreen(), { replyMarkup: mainMenuKeyboard() }); return; }
     const candidate=queue[idx]; const publicProfile=candidateProfile(candidate);
-    const text=matchCard({profile:publicProfile, score:candidate.score, why:{ sharedInterests:(candidate.why.sharedInterests||[]).map(id=>publicProfile.interests.find(i=>i&&i.id===id)).filter(Boolean), sharedGoals:candidate.why.sharedGoals||[], sharedSkills:candidate.why.sharedSkills||[], sharedLanguages:candidate.why.sharedLanguages||[] }, matchTypeLabel:matchTypeLabel(session.context.matchType)});
+    const text=discoveryProfileCard({profile:publicProfile, score:candidate.score});
     await sendProfileMedia(chatId, publicProfile, text, discoveryCardKeyboard(candidate.user.id, session.context.matchType));
   }
   async function advance(chatId,user){ const s=getSession(user.telegram_id); s.context.queueIndex=(s.context.queueIndex||0)+1; await showCurrentCard(chatId,user); }
@@ -36,7 +42,14 @@ export function createDiscoveryHandlers({ telegram, discoveryService, connection
   async function report(chatId,user,targetUserId){ await telegram.sendMessage(chatId,'🚨 ʀᴇᴘᴏʀᴛ ᴘʀᴏғɪʟᴇ', { replyMarkup: { inline_keyboard: [[{text:'🚫 sᴘᴀᴍ',callback_data:`reportreason:${targetUserId}:spam`,style:'danger'}],[{text:'🔞 ɪɴᴀᴘᴘʀᴏᴘʀɪᴀᴛᴇ',callback_data:`reportreason:${targetUserId}:inappropriate`,style:'danger'}],[{text:'🎭 ғᴀᴋᴇ ᴘʀᴏғɪʟᴇ',callback_data:`reportreason:${targetUserId}:fake`}],[{text:'💸 sᴄᴀᴍ',callback_data:`reportreason:${targetUserId}:scam`,style:'danger'}],[{text:'🛑 ʜᴀʀᴀssᴍᴇɴᴛ',callback_data:`reportreason:${targetUserId}:harassment`,style:'danger'}],[{text:'⬅️ ᴄᴀɴᴄᴇʟ',callback_data:'menu:main'}]] } }); }
   async function reportWithReason(chatId,user,targetUserId,reason){ discoveryService.reportProfile(user.id,targetUserId,reason); await telegram.sendMessage(chatId,'🚨 ʀᴇᴘᴏʀᴛ sᴜʙᴍɪᴛᴛᴇᴅ. ᴡᴇ’ʟʟ ʀᴇᴠɪᴇᴡ ᴛʜɪs ᴘʀᴏғɪʟᴇ.'); await advance(chatId,user); }
   async function save(chatId,user,targetUserId,callbackQueryId){ discoveryService.saveProfile(user.id,targetUserId); await telegram.answerCallbackQuery(callbackQueryId,'⭐ sᴀᴠᴇᴅ'); }
-  async function view(chatId,user,targetUserId){ const profile=discoveryService.viewProfile(user.id,targetUserId); await sendProfileMedia(chatId,profile,`${header('👤 ᴘʀᴏғɪʟᴇ')}\n${profileBlock(profile)}`,backButton('menu:main')); }
+  async function view(chatId,user,targetUserId){ const profile=discoveryService.viewProfile(user.id,targetUserId); await sendProfileMedia(chatId,profile,interactProfileScreen(profile),interactProfileKeyboard(targetUserId)); }
+  async function interact(chatId,user,targetUserId){
+    const ranked = await discoveryService.discover(user.id, { matchType: 'best_match', limit: 100 });
+    const found = ranked.find((r) => r.user.id === Number(targetUserId));
+    if (!found) { await telegram.sendMessage(chatId, `🌱 ᴛʜɪs ᴘʀᴏғɪʟᴇ ɪs ɴᴏ ʟᴏɴɢᴇʀ ᴀᴠᴀɪʟᴀʙʟᴇ.`, { replyMarkup: mainMenuKeyboard() }); return; }
+    const profile = candidateProfile(found);
+    await sendProfileMedia(chatId, profile, interactProfileScreen(profile, found.score), interactProfileKeyboard(found.user.id));
+  }
   async function promptConnect(chatId,user,targetUserId){ await telegram.sendMessage(chatId, `🤝 ᴄᴏɴɴᴇᴄᴛ ᴡɪᴛʜ ${profileService.getUser(targetUserId).display_name}\n\nᴄʜᴏᴏsᴇ ᴀ ʀᴇᴀsᴏɴ ᴏʀ ᴡʀɪᴛᴇ ʏᴏᴜʀ ᴏᴡɴ.`, { replyMarkup:connectionReasonKeyboard(targetUserId) }); }
   async function connectWithReason(chatId,user,targetUserId,tag){ if(tag==='custom'){ const s=getSession(user.telegram_id); s.awaiting='connect_message'; s.context.connectTarget=targetUserId; await telegram.sendMessage(chatId,'✍️ ᴛʏᴘᴇ ʏᴏᴜʀ ᴍᴇssᴀɢᴇ (ᴍᴀx 240 ᴄʜᴀʀs).'); return; } await sendConnectionRequest(chatId,user,targetUserId,REASON_MESSAGES[tag]||null); }
   async function sendConnectionRequest(chatId,user,targetUserId,message){ try{ connectionService.sendRequest(user.id,targetUserId,message); await telegram.sendMessage(chatId,`💚 ʀᴇǫᴜᴇsᴛ sᴇɴᴛ. ᴛʜᴇʏ'ʟʟ ɢᴇᴛ ʏᴏᴜʀ ᴘʀᴏғɪʟᴇ ᴀɴᴅ ᴄᴀɴ ᴀᴄᴄᴇᴘᴛ ᴏʀ ᴅᴇᴄʟɪɴᴇ.`); }catch(err){ await telegram.sendMessage(chatId,err instanceof RateLimitError?'🛡️ sʟᴏᴡ ᴅᴏᴡɴ — ᴛʀʏ ᴀɢᴀɪɴ ʟᴀᴛᴇʀ.':`❌ ${err.message}`); } }
@@ -72,5 +85,5 @@ export function createDiscoveryHandlers({ telegram, discoveryService, connection
   async function trendingSkip(chatId,user,targetUserId){ discoveryService.skipProfile(user.id,targetUserId); const s=getSession(user.telegram_id); s.context.trendingIndex=(s.context.trendingIndex||0)+1; await showTrendingCurrent(chatId,user); }
   async function trendingNext(chatId,user){ const s=getSession(user.telegram_id); s.context.trendingIndex=(s.context.trendingIndex||0)+1; await showTrendingCurrent(chatId,user); }
 
-  return { runDiscovery, showCurrentCard, advance, skip, hide, block, report, reportWithReason, save, view, promptConnect, connectWithReason, handleConnectMessageText, showCommunity, bindCommunityLookup, discoverWithinCommunity, showCandidate, runCustomDiscovery, showTrendingPeople, trendingAccept, trendingSkip, trendingNext };
+  return { runDiscovery, showCurrentCard, advance, skip, hide, block, report, reportWithReason, save, view, interact, promptConnect, connectWithReason, handleConnectMessageText, showCommunity, bindCommunityLookup, discoverWithinCommunity, showCandidate, runCustomDiscovery, showTrendingPeople, trendingAccept, trendingSkip, trendingNext };
 }

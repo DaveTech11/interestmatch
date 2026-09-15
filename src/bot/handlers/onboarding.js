@@ -1,11 +1,15 @@
-import { header, welcomeScreen, discoveryLearningScreen, genderScreen } from '../ui/templates.js';
-import { categoriesKeyboard, interestPickerKeyboard, mainMenuKeyboard, genderKeyboard } from '../ui/keyboards.js';
+import { header, welcomeScreen } from '../ui/templates.js';
+import { categoriesKeyboard, interestPickerKeyboard, genderKeyboard } from '../ui/keyboards.js';
 import { CATEGORIES, INTERESTS } from '../../domain/interestCatalogData.js';
 import { getSession, clearAwaiting } from '../session.js';
 
 const LOOKING_FOR_OPTIONS = [
-  ['networking', '🤝 ɴᴇᴛᴡᴏʀᴋɪɴɢ'], ['gaming', '🎮 ɢᴀᴍɪɴɢ ʙᴜᴅᴅɪᴇs'], ['learning', '📚 ʟᴇᴀʀɴɪɴɢ ᴘᴀʀᴛɴᴇʀ'],
-  ['chatting', '💬 ᴊᴜsᴛ ᴄʜᴀᴛᴛɪɴɢ'], ['anything', '✨ ᴏᴘᴇɴ ᴛᴏ ᴀɴʏᴛʜɪɴɢ'],
+  ['serious_relationship', '💖 sᴇʀɪᴏᴜs ʀᴇʟᴀᴛɪᴏɴsʜɪᴘ'],
+  ['long_term_relationship', '💍 ʟᴏɴɢ-ᴛᴇʀᴍ ʀᴇʟᴀᴛɪᴏɴsʜɪᴘ'],
+  ['friendship_first', '🫶 ғʀɪᴇɴᴅsʜɪᴘ ғɪʀsᴛ'],
+  ['casual_chat', '💬 ᴄᴀsᴜᴀʟ ᴄʜᴀᴛ'],
+  ['getting_to_know', '🌱 ɢᴇᴛᴛɪɴɢ ᴛᴏ ᴋɴᴏᴡ ᴇᴀᴄʜ ᴏᴛʜᴇʀ'],
+  ['open_to_anything', '✨ ᴏᴘᴇɴ ᴛᴏ sᴇᴇ ᴡʜᴇʀᴇ ɪᴛ ɢᴏᴇs'],
 ];
 
 const AGE_OPTIONS = [14, 15, 16, 17, 18, 19];
@@ -258,14 +262,7 @@ export function createOnboardingHandlers({ telegram, profileService, interestCat
     profileService.updateBasics(user.id, { lookingFor });
     profileService.completeOnboarding(user.id);
     achievementService.onOnboardingComplete(user.id);
-    const interestIds = profileService.buildMatchProfile(user.id).interests;
-    const selectedInterests = interestIds.map((id) => interestCatalogService.getInterest(id)).filter(Boolean);
-    const topCategoryIds = [...new Set(selectedInterests.map((i) => i.category_id))].slice(0, 3);
-    const topCategories = topCategoryIds.map((id) => interestCatalogService.listCategories().find((c) => c.id === id)).filter(Boolean);
-    await telegram.sendMessage(chatId, discoveryLearningScreen(topCategories.length ? topCategories : selectedInterests.slice(0, 3)));
-    const menuMarkup = mainMenuKeyboard();
-    const menuSent = await telegram.sendPhoto(chatId, menuImageUrl, `🎉 ʏᴏᴜʀ ᴘʀᴏғɪʟᴇ ɪs ʀᴇᴀᴅʏ!\n\n${header()}`, { replyMarkup: menuMarkup });
-    if (!menuSent?.ok) await telegram.sendMessage(chatId, `${header()}\n🎉 ʏᴏᴜʀ ᴘʀᴏғɪʟᴇ ɪs ʀᴇᴀᴅʏ!`, { replyMarkup: menuMarkup });
+    await telegram.sendMessage(chatId, `🏆 ᴀᴄʜɪᴇᴠᴇᴍᴇɴᴛ ᴜɴʟᴏᴄᴋᴇᴅ\n\n🌱 ғɪʀsᴛ ᴘʀᴏғɪʟᴇ\nᴄᴏᴍᴘʟᴇᴛᴇᴅ ʏᴏᴜʀ ɪɴᴛᴇʀᴇsᴛᴍᴀᴛᴄʜ ᴘʀᴏғɪʟᴇ.`);
   }
 
   return { begin, startAccountSetup, showRequirements, showAgePicker, chooseAge, askCustomAge, continueSetup, chooseGender, handlePhotoStep, showCategories, showInterestsForCategory, showInterestPage, askCustomInterest, toggleInterest, finishInterests, handleTextStep, completeOnboarding };

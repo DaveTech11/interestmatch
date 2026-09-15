@@ -77,6 +77,17 @@ export function createDiscoveryHandlers({ telegram, discoveryService, connection
     }
     await sendConnectionRequest(chatId, user, Number(targetUserId), '🤝 ᴡᴇ ᴍᴇᴛ ᴛʜʀᴏᴜɢʜ ғʀɪᴇɴᴅsʜɪᴘ ᴅɪsᴄᴏᴠᴇʀʏ');
   }
+  async function friendChat(chatId,user,targetUserId){
+    const source = profileService.getUser(user.id);
+    const target = profileService.getUser(Number(targetUserId));
+    if (discoveryService.getDiscoveryMode(source) !== 'friendship' ||
+        discoveryService.getDiscoveryMode(target) !== 'friendship' ||
+        Number(source.age) !== Number(target.age)) {
+      await telegram.sendMessage(chatId, '⚠️ ᴄʜᴀᴛ ᴄᴏɴɴᴇᴄᴛɪᴏɴs ғᴏʀ 14–17 ᴀʀᴇ ʟɪᴍɪᴛᴇᴅ ᴛᴏ ᴛʜᴇ sᴀᴍᴇ ᴀɢᴇ.');
+      return;
+    }
+    await sendConnectionRequest(chatId, user, Number(targetUserId), '💬 ᴡᴀɴᴛs ᴛᴏ ᴄʜᴀᴛ ᴡɪᴛʜ ʏᴏᴜ ᴛʜʀᴏᴜɢʜ ɪɴᴛᴇʀᴇsᴛᴍᴀᴛᴄʜ');
+  }
   async function promptConnect(chatId,user,targetUserId){ await telegram.sendMessage(chatId, `🤝 ᴄᴏɴɴᴇᴄᴛ ᴡɪᴛʜ ${profileService.getUser(targetUserId).display_name}\n\nᴄʜᴏᴏsᴇ ᴀ ʀᴇᴀsᴏɴ ᴏʀ ᴡʀɪᴛᴇ ʏᴏᴜʀ ᴏᴡɴ.`, { replyMarkup:connectionReasonKeyboard(targetUserId) }); }
   async function connectWithReason(chatId,user,targetUserId,tag){ if(tag==='custom'){ const s=getSession(user.telegram_id); s.awaiting='connect_message'; s.context.connectTarget=targetUserId; await telegram.sendMessage(chatId,'✍️ ᴛʏᴘᴇ ʏᴏᴜʀ ᴍᴇssᴀɢᴇ (ᴍᴀx 240 ᴄʜᴀʀs).'); return; } await sendConnectionRequest(chatId,user,targetUserId,REASON_MESSAGES[tag]||null); }
   async function sendConnectionRequest(chatId,user,targetUserId,message){ try{ connectionService.sendRequest(user.id,targetUserId,message); await telegram.sendMessage(chatId,`💚 ʀᴇǫᴜᴇsᴛ sᴇɴᴛ. ᴛʜᴇʏ'ʟʟ ɢᴇᴛ ʏᴏᴜʀ ᴘʀᴏғɪʟᴇ ᴀɴᴅ ᴄᴀɴ ᴀᴄᴄᴇᴘᴛ ᴏʀ ᴅᴇᴄʟɪɴᴇ.`); }catch(err){ await telegram.sendMessage(chatId,err instanceof RateLimitError?'🛡️ sʟᴏᴡ ᴅᴏᴡɴ — ᴛʀʏ ᴀɢᴀɪɴ ʟᴀᴛᴇʀ.':`❌ ${err.message}`); } }
@@ -112,5 +123,5 @@ export function createDiscoveryHandlers({ telegram, discoveryService, connection
   async function trendingSkip(chatId,user,targetUserId){ discoveryService.skipProfile(user.id,targetUserId); const s=getSession(user.telegram_id); s.context.trendingIndex=(s.context.trendingIndex||0)+1; await showTrendingCurrent(chatId,user); }
   async function trendingNext(chatId,user){ const s=getSession(user.telegram_id); s.context.trendingIndex=(s.context.trendingIndex||0)+1; await showTrendingCurrent(chatId,user); }
 
-  return { runDiscovery, showCurrentCard, advance, skip, hide, block, report, reportWithReason, save, view, interact, friendConnect, promptConnect, connectWithReason, handleConnectMessageText, showCommunity, bindCommunityLookup, discoverWithinCommunity, showCandidate, runCustomDiscovery, showTrendingPeople, trendingAccept, trendingSkip, trendingNext };
+  return { runDiscovery, showCurrentCard, advance, skip, hide, block, report, reportWithReason, save, view, interact, friendConnect, friendChat, promptConnect, connectWithReason, handleConnectMessageText, showCommunity, bindCommunityLookup, discoverWithinCommunity, showCandidate, runCustomDiscovery, showTrendingPeople, trendingAccept, trendingSkip, trendingNext };
 }

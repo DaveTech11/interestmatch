@@ -70,7 +70,7 @@ export function discoveryCardKeyboard(targetUserId, matchType = 'best_match', mo
 
 export function friendshipProfileKeyboard(targetUserId) {
   return { inline_keyboard: [
-    row(btn('🤝 sᴇɴᴅ ғʀɪᴇɴᴅ ʀᴇǫᴜᴇsᴛ', `friendconnect:${targetUserId}`, 'success')),
+    row(btn('💬 ᴄʜᴀᴛ ᴡɪᴛʜ', `friendchat:${targetUserId}`, 'success'), btn('🤝 ᴍᴀᴛᴄʜ', `friendconnect:${targetUserId}`, 'success')),
     row(btn('➡️ ɴᴇxᴛ', `next:best_match:${targetUserId}`, 'primary')),
     row(btn('⭐ sᴀᴠᴇ', `save:${targetUserId}`), btn('⛔ ʜɪᴅᴇ', `hide:${targetUserId}`)),
     row(btn('🚫 ʙʟᴏᴄᴋ', `block:${targetUserId}`, 'danger'), btn('🚨 ʀᴇᴘᴏʀᴛ', `report:${targetUserId}`)),

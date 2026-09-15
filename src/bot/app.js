@@ -417,6 +417,9 @@ export async function buildApplication() {
         case 'friendconnect':
           await discoveryHandlers.friendConnect(chatId, user, Number(parts[0]));
           break;
+        case 'friendchat':
+          await discoveryHandlers.friendChat(chatId, user, Number(parts[0]));
+          break;
         case 'connect':
           await discoveryHandlers.promptConnect(chatId, user, Number(parts[0]));
           break;

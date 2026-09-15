@@ -29,6 +29,8 @@ import { createPerfectMatchService } from '../services/perfectMatchService.js';
 import { createTrendingModesService } from '../services/trendingModesService.js';
 import { mutualMatchScreen } from './ui/templates.js';
 import { DeterministicRecommendationProvider } from '../domain/matching/recommendationProvider.js';
+import { CATEGORIES, INTERESTS } from '../domain/interestCatalogData.js';
+import { createServer } from 'node:http';
 
 import { createOnboardingHandlers } from './handlers/onboarding.js';
 import { createDiscoveryHandlers } from './handlers/discovery.js';
@@ -45,6 +47,19 @@ export async function buildApplication() {
 
   const db = getDb();
   runMigrations(db);
+  // Render/production must not depend on a separate one-off seed command.
+  // Keep the interest catalog available after every fresh deployment.
+  const insertCategory = db.prepare(`INSERT INTO interest_categories (id, name, emoji, sort_order) VALUES (?, ?, ?, ?) ON CONFLICT(id) DO UPDATE SET name=excluded.name, emoji=excluded.emoji, sort_order=excluded.sort_order`);
+  const insertInterest = db.prepare(`INSERT INTO interests (id, name, emoji, category_id, active) VALUES (?, ?, ?, ?, 1) ON CONFLICT(id) DO UPDATE SET name=excluded.name, emoji=excluded.emoji, category_id=excluded.category_id, active=1`);
+  db.exec('BEGIN');
+  try {
+    for (const category of CATEGORIES) insertCategory.run(category.id, category.name, category.emoji, category.sort_order);
+    for (const interest of INTERESTS) insertInterest.run(interest.id, interest.name, interest.emoji, interest.category_id);
+    db.exec('COMMIT');
+  } catch (seedError) {
+    db.exec('ROLLBACK');
+    throw seedError;
+  }
   const store = createSqliteStore(db);
 
   const telegram = createTelegramClient(env.botToken);
@@ -474,6 +489,8 @@ export async function buildApplication() {
           else if (parts[0] === 'age_custom') await onboardingHandlers.askCustomAge(chatId, user);
           else if (parts[0] === 'interests_done') await onboardingHandlers.finishInterests(chatId, user);
           else if (parts[0] === 'categories') await onboardingHandlers.showCategories(chatId);
+          else if (parts[0] === 'interests_page') await onboardingHandlers.showInterestPage(chatId, user.telegram_id, parts[1], Number(parts[2]), messageId);
+          else if (parts[0] === 'interest_custom') await onboardingHandlers.askCustomInterest(chatId, user.telegram_id, parts[1]);
           break;
         case 'onboardcat':
           await onboardingHandlers.showInterestsForCategory(chatId, user.telegram_id, parts[0]);
@@ -569,6 +586,17 @@ export async function buildApplication() {
   return {
     start() {
       logger.info('InterestMatch bot starting', { env: env.nodeEnv });
+      const port = Number(process.env.PORT || 10000);
+      const healthServer = createServer((req, res) => {
+        if (req.url === '/api/health' || req.url === '/health' || req.url === '/') {
+          res.writeHead(200, { 'content-type': 'application/json' });
+          res.end(JSON.stringify({ ok: true, service: 'interestmatch', status: 'running' }));
+          return;
+        }
+        res.writeHead(404, { 'content-type': 'application/json' });
+        res.end(JSON.stringify({ ok: false, error: 'not_found' }));
+      });
+      healthServer.listen(port, '0.0.0.0', () => logger.info('health server listening', { port }));
       startPolling(telegram, onUpdate);
     },
     // exported for tests / scripts that want the wired services without polling

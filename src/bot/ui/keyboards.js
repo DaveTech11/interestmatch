@@ -110,7 +110,30 @@ export function profileModeKeyboard(currentMode) {
 }
 export function confirmDeleteKeyboard() { return { inline_keyboard: [row(btn('⚠️ ʏᴇs, ᴅᴇʟᴇᴛᴇ ᴇᴠᴇʀʏᴛʜɪɴɢ', 'privacy:delete_confirmed', 'danger'), btn('❌ ᴄᴀɴᴄᴇʟ', 'menu:privacy'))] }; }
 export function categoriesKeyboard(categories, prefix='onboardcat', backTarget='menu:main') { return { inline_keyboard: [...categories.map(c => row(btn(`${c.emoji} ${c.name}`, `${prefix}:${c.id}`))), row(btn('⬅️ ʙᴀᴄᴋ', backTarget))] }; }
-export function interestPickerKeyboard(interests, selectedIds, categoryId) { return { inline_keyboard: [...interests.map(i => row(btn(`${selectedIds.includes(i.id) ? '✅' : i.emoji} ${i.name}`, `toggleinterest:${i.id}:${categoryId}`, selectedIds.includes(i.id) ? 'success' : 'primary'))), row(btn('✅ ᴅᴏɴᴇ', 'onboarding:interests_done', 'success'), btn('⬅️ ᴄᴀᴛᴇɢᴏʀɪᴇs', 'onboarding:categories'))] }; }
+export function interestPickerKeyboard(interests, selectedIds, categoryId, page = 0, pageSize = 12) {
+  const safeInterests = Array.isArray(interests) ? interests : [];
+  const safeSelected = Array.isArray(selectedIds) ? selectedIds : [];
+  const totalPages = Math.max(1, Math.ceil(safeInterests.length / pageSize));
+  const currentPage = Math.min(Math.max(Number(page) || 0, 0), totalPages - 1);
+  const start = currentPage * pageSize;
+  const visible = safeInterests.slice(start, start + pageSize);
+  const rows = [];
+  for (let i = 0; i < visible.length; i += 3) {
+    rows.push(visible.slice(i, i + 3).map((interest) => btn(
+      `${safeSelected.includes(interest.id) ? '✅' : interest.emoji} ${interest.name}`,
+      `toggleinterest:${interest.id}:${categoryId}`,
+      safeSelected.includes(interest.id) ? 'success' : 'primary'
+    )));
+  }
+  const nav = [];
+  if (currentPage > 0) nav.push(btn('⬅️ ᴘʀᴇᴠ', `onboarding:interests_page:${categoryId}:${currentPage - 1}`, 'primary'));
+  if (currentPage < totalPages - 1) nav.push(btn('➡️ ɴᴇxᴛ', `onboarding:interests_page:${categoryId}:${currentPage + 1}`, 'success'));
+  if (nav.length) rows.push(nav);
+  rows.push(row(btn('✍️ ᴄᴜsᴛᴏᴍ', `onboarding:interest_custom:${categoryId}`, 'success')));
+  rows.push(row(btn('✅ ᴅᴏɴᴇ', 'onboarding:interests_done', 'success')));
+  rows.push(row(btn('⬅️ ᴄᴀᴛᴇɢᴏʀɪᴇs', 'onboarding:categories', 'primary')));
+  return { inline_keyboard: rows };
+}
 export function communityListKeyboard(interests, categoryId) { return { inline_keyboard: [...interests.map(i => row(btn(`${i.emoji} ${i.name}`, `community:${i.id}`))), row(btn('⬅️ ᴄᴀᴛᴇɢᴏʀɪᴇs', 'menu:communities'))] }; }
 export function communityActionsKeyboard(interestId) { return { inline_keyboard: [row(btn('👥 ᴅɪsᴄᴏᴠᴇʀ ᴘᴇᴏᴘʟᴇ', `communitydiscover:${interestId}`, 'success')), row(btn('🔥 ᴛʀᴇɴᴅɪɴɢ', 'menu:trending')), row(btn('⬅️ ʙᴀᴄᴋ', 'menu:communities'))] }; }
 export function searchInterestKeyboard(interests) { return { inline_keyboard: [...interests.map(i => row(btn(`${i.emoji} ${i.name}`, `searchinterest:${i.id}`))), row(btn('⏭️ sᴋɪᴘ ɪɴᴛᴇʀᴇsᴛ ғɪʟᴛᴇʀ', 'searchinterest:skip')), row(btn('⬅️ ᴄᴀᴛᴇɢᴏʀɪᴇs', 'menu:search'))] }; }

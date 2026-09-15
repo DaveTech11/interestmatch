@@ -12,15 +12,6 @@ export function welcomeScreen(displayName) {
     `ɪɴᴛᴇʀᴇsᴛᴍᴀᴛᴄʜ ʟᴇᴀʀɴs ᴡʜᴀᴛ ʏᴏᴜ'ʀᴇ ɪɴᴛᴏ ᴀɴᴅ ʜᴇʟᴘs ʏᴏᴜ ғɪɴᴅ ᴘᴇᴏᴘʟᴇ ᴡʜᴏ ᴀᴄᴛᴜᴀʟʟʏ ᴍᴀᴛᴄʜ ʏᴏᴜʀ ᴠɪʙᴇ.\n\n` +
     `ʟᴇᴛ's sᴇᴛ ᴜᴘ ʏᴏᴜʀ ᴘʀᴏғɪʟᴇ.`;
 }
-export function noMoreMatchesScreen() {
-  return `
-<b>💚 ɴᴏ ᴍᴏʀᴇ ᴍᴀᴛᴄʜᴇs</b>
-
-ʏᴏᴜ'ᴠᴇ ʀᴇᴀᴄʜᴇᴅ ᴛʜᴇ ᴇɴᴅ ᴏꜰ ʏᴏᴜʀ ᴄᴜʀʀᴇɴᴛ ᴅɪsᴄᴏᴠᴇʀʏ ʟɪsᴛ.
-
-ᴛʀʏ ᴄʜᴀɴɢɪɴɢ ʏᴏᴜʀ ᴍᴀᴛᴄʜ ᴘʀᴇꜰᴇʀᴇɴᴄᴇs ᴏʀ ᴄᴏᴍᴇ ʙᴀᴄᴋ ʟᴀᴛᴇʀ. 💫
-`.trim();
-}
 
 export function genderScreen() {
   return `${header('👤 ᴘʀᴏғɪʟᴇ sᴇᴛᴜᴘ')}\n` +

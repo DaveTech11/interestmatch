@@ -1,5 +1,6 @@
 import { header, welcomeScreen, discoveryLearningScreen, genderScreen } from '../ui/templates.js';
 import { categoriesKeyboard, interestPickerKeyboard, mainMenuKeyboard, genderKeyboard } from '../ui/keyboards.js';
+import { CATEGORIES, INTERESTS } from '../../domain/interestCatalogData.js';
 import { getSession, clearAwaiting } from '../session.js';
 
 const LOOKING_FOR_OPTIONS = [
@@ -120,17 +121,34 @@ export function createOnboardingHandlers({ telegram, profileService, interestCat
     return false;
   }
 
-  async function showCategories(chatId) {
-    await telegram.sendMessage(chatId, `${header('🌟 ᴘɪᴄᴋ ʏᴏᴜʀ ɪɴᴛᴇʀᴇsᴛs')}\nᴄʜᴏᴏsᴇ ᴏɴᴇ ᴏʀ ᴍᴏʀᴇ ᴄᴀᴛᴇɢᴏʀɪᴇs:`, { replyMarkup: categoriesKeyboard(interestCatalogService.listCategories(), 'onboardcat') });
+  function getCategories() {
+    const categories = interestCatalogService.listCategories();
+    return categories.length ? categories : CATEGORIES;
   }
 
-  async function showInterestsForCategory(chatId, telegramId, categoryId) {
+  function getInterests(categoryId) {
+    const interests = interestCatalogService.listInterests(categoryId);
+    return interests.length ? interests : INTERESTS.filter((interest) => interest.category_id === categoryId);
+  }
+
+  async function showCategories(chatId) {
+    await telegram.sendMessage(chatId, `${header('💞 ᴘɪᴄᴋ ʏᴏᴜʀ ʟᴏᴠᴇ & ʀᴇʟᴀᴛɪᴏɴsʜɪᴘ ɪɴᴛᴇʀᴇsᴛs')}\n\nᴄʜᴏᴏsᴇ ᴡʜᴀᴛ ᴍᴀᴛᴛᴇʀs ᴛᴏ ʏᴏᴜ ɪɴ ᴀ ᴄᴏɴɴᴇᴄᴛɪᴏɴ. ᴘɪᴄᴋ ᴍᴜʟᴛɪᴘʟᴇ.`, { replyMarkup: categoriesKeyboard(getCategories(), 'onboardcat', 'onboarding:categories') });
+  }
+
+  async function showInterestsForCategory(chatId, telegramId, categoryId, page = 0, editMessageId = null) {
     const session = getSession(telegramId);
     session.context.currentCategory = categoryId;
-    const interests = interestCatalogService.listInterests(categoryId);
-    const category = interestCatalogService.listCategories().find((c) => c.id === categoryId);
+    session.context.currentInterestPage = Number(page) || 0;
+    const interests = getInterests(categoryId);
+    const category = getCategories().find((c) => c.id === categoryId);
     if (!category) return;
-    await telegram.sendMessage(chatId, `${category.emoji} ${category.name}\n\nᴛᴀᴘ ᴛᴏ sᴇʟᴇᴄᴛ — ᴛᴀᴘ "ᴅᴏɴᴇ" ᴡʜᴇɴ ғɪɴɪsʜᴇᴅ.`, { replyMarkup: interestPickerKeyboard(interests, session.context.selectedInterests || [], categoryId) });
+    const totalPages = Math.max(1, Math.ceil(interests.length / 12));
+    const currentPage = Math.min(session.context.currentInterestPage, totalPages - 1);
+    session.context.currentInterestPage = currentPage;
+    const text = `${header(`${category.emoji} ${category.name}`)}\n\nᴛᴀᴘ ᴀɴʏ ɪɴᴛᴇʀᴇsᴛ ᴛᴏ sᴇʟᴇᴄᴛ ɪᴛ. ʏᴏᴜ ᴄᴀɴ ᴘɪᴄᴋ ᴍᴜʟᴛɪᴘʟᴇ.\n\n📄 ᴘᴀɢᴇ ${currentPage + 1}/${totalPages}\n💚 sᴇʟᴇᴄᴛᴇᴅ: ${session.context.selectedInterests?.length || 0}`;
+    const markup = interestPickerKeyboard(interests, session.context.selectedInterests || [], categoryId, currentPage, 12);
+    if (editMessageId) await telegram.editMessageText(chatId, editMessageId, text, { replyMarkup: markup });
+    else await telegram.sendMessage(chatId, text, { replyMarkup: markup });
   }
 
   async function toggleInterest(chatId, messageId, telegramId, interestId, categoryId) {
@@ -138,7 +156,18 @@ export function createOnboardingHandlers({ telegram, profileService, interestCat
     const selected = new Set(session.context.selectedInterests || []);
     if (selected.has(interestId)) selected.delete(interestId); else selected.add(interestId);
     session.context.selectedInterests = [...selected];
-    await telegram.editMessageText(chatId, messageId, `ᴛᴀᴘ ᴛᴏ sᴇʟᴇᴄᴛ — ᴛᴀᴘ "ᴅᴏɴᴇ" ᴡʜᴇɴ ғɪɴɪsʜᴇᴅ.`, { replyMarkup: interestPickerKeyboard(interestCatalogService.listInterests(categoryId), session.context.selectedInterests, categoryId) });
+    await showInterestsForCategory(chatId, telegramId, categoryId, session.context.currentInterestPage || 0, messageId);
+  }
+
+  async function showInterestPage(chatId, telegramId, categoryId, page, messageId) {
+    await showInterestsForCategory(chatId, telegramId, categoryId, page, messageId);
+  }
+
+  async function askCustomInterest(chatId, telegramId, categoryId) {
+    const session = getSession(telegramId);
+    session.context.currentCategory = categoryId;
+    session.awaiting = 'onboarding_interest_custom';
+    await telegram.sendMessage(chatId, `✍️ ᴄᴜsᴛᴏᴍ ɪɴᴛᴇʀᴇsᴛ\n\nᴛʏᴘᴇ ᴏɴᴇ ᴏʀ ᴍᴏʀᴇ ɪɴᴛᴇʀᴇsᴛs, sᴇᴘᴀʀᴀᴛᴇᴅ ʙʏ ᴄᴏᴍᴍᴀs.\nᴇxᴀᴍᴘʟᴇ: ᴀғʀᴏ ᴅᴀɴᴄᴇ, ᴄᴏᴅɪɴɢ ᴡɪᴛʜ ɢᴘᴛ`);
   }
 
   async function finishInterests(chatId, user) {
@@ -184,6 +213,24 @@ export function createOnboardingHandlers({ telegram, profileService, interestCat
       }
       return true;
     }
+    if (session.awaiting === 'onboarding_interest_custom') {
+      const custom = clean.split(',').map((value) => value.trim()).filter(Boolean).slice(0, 10);
+      if (!custom.length) {
+        await telegram.sendMessage(chatId, '⚠️ ᴇɴᴛᴇʀ ᴀᴛ ʟᴇᴀsᴛ ᴏɴᴇ ɪɴᴛᴇʀᴇsᴛ.');
+        return true;
+      }
+      const knownByName = new Map(INTERESTS.map((interest) => [interest.name.toLowerCase(), interest.id]));
+      const selected = new Set(session.context.selectedInterests || []);
+      for (const value of custom) {
+        const known = knownByName.get(value.toLowerCase());
+        if (known) selected.add(known);
+      }
+      session.context.selectedInterests = [...selected];
+      session.awaiting = null;
+      await telegram.sendMessage(chatId, `✅ ᴄᴜsᴛᴏᴍ ɪɴᴛᴇʀᴇsᴛ ʀᴇᴄᴇɪᴠᴇᴅ.\n💚 sᴇʟᴇᴄᴛᴇᴅ: ${session.context.selectedInterests.length}\n\nᴄᴜsᴛᴏᴍ ɴᴀᴍᴇs ᴛʜᴀᴛ ᴍᴀᴛᴄʜ ᴏᴜʀ ᴄᴀᴛᴀʟᴏɢ ᴡɪʟʟ ʙᴇ ᴀᴅᴅᴇᴅ ᴛᴏ ʏᴏᴜʀ sᴇʟᴇᴄᴛɪᴏɴ.`);
+      await showInterestsForCategory(chatId, user.telegram_id, session.context.currentCategory, session.context.currentInterestPage || 0);
+      return true;
+    }
     if (session.awaiting === 'onboarding_bio') {
       if (clean.toLowerCase() !== 'skip') profileService.updateBasics(user.id, { bio: clean });
       session.awaiting = 'onboarding_country';
@@ -221,5 +268,5 @@ export function createOnboardingHandlers({ telegram, profileService, interestCat
     if (!menuSent?.ok) await telegram.sendMessage(chatId, `${header()}\n🎉 ʏᴏᴜʀ ᴘʀᴏғɪʟᴇ ɪs ʀᴇᴀᴅʏ!`, { replyMarkup: menuMarkup });
   }
 
-  return { begin, startAccountSetup, showRequirements, showAgePicker, chooseAge, askCustomAge, continueSetup, chooseGender, handlePhotoStep, showCategories, showInterestsForCategory, toggleInterest, finishInterests, handleTextStep, completeOnboarding };
+  return { begin, startAccountSetup, showRequirements, showAgePicker, chooseAge, askCustomAge, continueSetup, chooseGender, handlePhotoStep, showCategories, showInterestsForCategory, showInterestPage, askCustomInterest, toggleInterest, finishInterests, handleTextStep, completeOnboarding };
 }

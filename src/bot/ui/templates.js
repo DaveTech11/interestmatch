@@ -35,29 +35,23 @@ export function whyMatchScreen(why) {
 }
 
 export function profileTable(profile, { includeInterests = true } = {}) {
-  const lines = [
-    `━━━━━━━━━━━━━━━━━━━━`,
-    `👤 ɴᴀᴍᴇ\n${profile.displayName || '—'}`,
-    `━━━━━━━━━━━━━━━━━━━━`,
-    `🎂 ᴀɢᴇ\n${profile.age ?? '—'}`,
-    `━━━━━━━━━━━━━━━━━━━━`,
-    `💬 ʙɪᴏ\n${profile.bio || 'ɴᴏ ʙɪᴏ ʏᴇᴛ.'}`,
-    `━━━━━━━━━━━━━━━━━━━━`,
-    `🌍 ᴄᴏᴜɴᴛʀʏ\n${profile.country || '—'}`,
-  ];
-  if (profile.gender) {
-    lines.push(`━━━━━━━━━━━━━━━━━━━━`, `🚻 ɢᴇɴᴅᴇʀ\n${profile.gender === 'male' ? 'ʙᴏʏ' : 'ɢɪʀʟ'}`);
-  }
-  if (profile.lookingFor) {
-    lines.push(`━━━━━━━━━━━━━━━━━━━━`, `🎯 ʟᴏᴏᴋɪɴɢ ғᴏʀ\n${profile.lookingFor}`);
-  }
-  if (includeInterests && profile.interests?.length) {
-    lines.push(`━━━━━━━━━━━━━━━━━━━━`, `💞 ʟᴏᴠᴇ & ʀᴇʟᴀᴛɪᴏɴsʜɪᴘ\n${profile.interests.map((i) => `${i.emoji} ${i.name}`).join('\n')}`);
-  }
-  lines.push(`━━━━━━━━━━━━━━━━━━━━`);
-  return lines.join('\n');
-}
+  const escapeHtml = (value) => String(value ?? '—').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const field = (icon, label, value) =>
+    `╭─ ${icon} <b>${label}</b>\n╰─ ${escapeHtml(value || '—')}`;
 
+  const sections = [
+    field('👤', 'ɴᴀᴍᴇ', profile.displayName),
+    field('🎂', 'ᴀɢᴇ', profile.age ?? '—'),
+    field('💬', 'ʙɪᴏ', profile.bio || 'ɴᴏ ʙɪᴏ ʏᴇᴛ.'),
+    field('🌍', 'ᴄᴏᴜɴᴛʀʏ', profile.country || '—'),
+  ];
+  if (profile.gender) sections.push(field('🚻', 'ɢᴇɴᴅᴇʀ', profile.gender === 'male' ? 'ʙᴏʏ' : 'ɢɪʀʟ'));
+  if (profile.lookingFor) sections.push(field('🎯', 'ʟᴏᴏᴋɪɴɢ ғᴏʀ', profile.lookingFor));
+  if (includeInterests && profile.interests?.length) {
+    sections.push(`╭─ 💞 <b>ʟᴏᴠᴇ & ʀᴇʟᴀᴛɪᴏɴsʜɪᴘ</b>\n╰─ ${profile.interests.map((i) => `${i.emoji} ${i.name}`).join('\n')}`);
+  }
+  return sections.join('\n\n');
+}
 export function profileBlock(profile) {
   return profileTable(profile);
 }

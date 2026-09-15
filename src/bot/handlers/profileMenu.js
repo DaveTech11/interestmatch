@@ -1,4 +1,4 @@
-import { statsScreen, interestDnaScreen, matchHistoryScreen, profileActivityScreen, savedListScreen, trendingScreen, header, deleteAllDataConfirmScreen, customMatchScreen } from '../ui/templates.js';
+import { statsScreen, interestDnaScreen, matchHistoryScreen, profileActivityScreen, savedListScreen, trendingScreen, header, deleteAllDataConfirmScreen, customMatchScreen, profileTable } from '../ui/templates.js';
 import { mainMenuKeyboard, nearbyToggleKeyboard, categoriesKeyboard, communityListKeyboard, privacyMenuKeyboard, confirmDeleteKeyboard, profileModeKeyboard, searchInterestKeyboard, searchMinScoreKeyboard, backButton, customMatchKeyboard } from '../ui/keyboards.js';
 import { computeInterestDna } from '../../domain/scoring.js';
 import { getSession, clearAwaiting } from '../session.js';
@@ -18,9 +18,9 @@ export function createProfileMenuHandlers({ telegram, store, profileService, pri
   async function showCommunityList(chatId, categoryId) { await telegram.sendMessage(chatId, 'ᴄᴏᴍᴍᴜɴɪᴛɪᴇs ɪɴ ᴛʜɪs ᴄᴀᴛᴇɢᴏʀʏ:', { replyMarkup: communityListKeyboard(interestCatalogService.listInterests(categoryId), categoryId) }); }
   async function showProfile(chatId, user) {
     const fresh = profileService.getUser(user.id); const interestIds = store.getUserInterests(user.id); const interests = interestIds.map((id) => interestCatalogService.getInterest(id)).filter(Boolean);
-    const text = `${header('👤 ᴍʏ ᴘʀᴏғɪʟᴇ')}\n${fresh.display_name}${fresh.age ? `, ${fresh.age}` : ''}\n${fresh.gender ? `👤 ${fresh.gender === 'male' ? 'ʙᴏʏ' : 'ɢɪʀʟ'}\n` : ''}${fresh.country || ''}${fresh.bio ? `\n💬 ${fresh.bio}` : ''}${interests.length ? `\n\n❤️ ${interests.map((i) => `${i.emoji} ${i.name}`).join(' · ')}` : ''}`;
-    if (fresh.photo_file_id) await telegram.sendPhoto(chatId, fresh.photo_file_id, text, { replyMarkup: { inline_keyboard: [[{text:'👤 ᴅɪsᴄᴏᴠᴇʀʏ sᴛᴀᴛᴜs',callback_data:'menu:profilemode',style:'primary'}],[{text:'⬅️ ʙᴀᴄᴋ',callback_data:'menu:main'}]] } });
-    else await telegram.sendMessage(chatId, text, { replyMarkup: { inline_keyboard: [[{text:'👤 ᴅɪsᴄᴏᴠᴇʀʏ sᴛᴀᴛᴜs',callback_data:'menu:profilemode',style:'primary'}],[{text:'⬅️ ʙᴀᴄᴋ',callback_data:'menu:main'}]] } });
+    const text = `${header('👤 ᴍʏ ᴘʀᴏғɪʟᴇ')}\n\n${profileTable({ displayName: fresh.display_name, age: fresh.age, bio: fresh.bio, country: fresh.country, gender: fresh.gender, lookingFor: fresh.looking_for, interests })}`;
+    if (fresh.photo_file_id) await telegram.sendPhoto(chatId, fresh.photo_file_id, text, { parseMode: 'HTML', replyMarkup: { inline_keyboard: [[{text:'👤 ᴅɪsᴄᴏᴠᴇʀʏ sᴛᴀᴛᴜs',callback_data:'menu:profilemode',style:'primary'}],[{text:'⬅️ ʙᴀᴄᴋ',callback_data:'menu:main'}]] } });
+    else await telegram.sendMessage(chatId, text, { parseMode: 'HTML', replyMarkup: { inline_keyboard: [[{text:'👤 ᴅɪsᴄᴏᴠᴇʀʏ sᴛᴀᴛᴜs',callback_data:'menu:profilemode',style:'primary'}],[{text:'⬅️ ʙᴀᴄᴋ',callback_data:'menu:main'}]] } });
   }
   async function showProfileMode(chatId, user) { await telegram.sendMessage(chatId, `👤 ᴅɪsᴄᴏᴠᴇʀʏ sᴛᴀᴛᴜs\n\nᴄᴜʀʀᴇɴᴛ: ${profileService.getUser(user.id).profile_mode}`, { replyMarkup: profileModeKeyboard(profileService.getUser(user.id).profile_mode) }); }
   async function setProfileMode(chatId, user, mode) { profileService.setProfileMode(user.id, mode); await telegram.sendMessage(chatId, '✅ ᴅɪsᴄᴏᴠᴇʀʏ sᴛᴀᴛᴜs ᴜᴘᴅᴀᴛᴇᴅ.', { replyMarkup: mainMenuKeyboard() }); }

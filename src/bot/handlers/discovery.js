@@ -9,9 +9,9 @@ export function createDiscoveryHandlers({ telegram, discoveryService, connection
   function matchTypeLabel(type) { return discoveryService.matchTypeLabels[type] || '✨ ᴅɪsᴄᴏᴠᴇʀʏ'; }
   async function sendProfileMedia(chatId, profile, text, replyMarkup) {
     if (profile.photoFileId) {
-      const result = await telegram.sendPhoto(chatId, profile.photoFileId, text, { replyMarkup });
-      if (!result?.ok) await telegram.sendMessage(chatId, text, { replyMarkup });
-    } else await telegram.sendMessage(chatId, text, { replyMarkup });
+      const result = await telegram.sendPhoto(chatId, profile.photoFileId, text, { replyMarkup, parseMode: 'HTML' });
+      if (!result?.ok) await telegram.sendMessage(chatId, text, { replyMarkup, parseMode: 'HTML' });
+    } else await telegram.sendMessage(chatId, text, { replyMarkup, parseMode: 'HTML' });
   }
   function candidateProfile(candidate) { return profileService.renderPublicProfile(candidate.user.id); }
 
